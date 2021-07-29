@@ -23,44 +23,75 @@ class Question:
 
 def getMarked(quespaper):
     marked = []
-    quesGroups = quespaper.findAll("div",{"class":"section-cntnr"})
-    for k in range(len(quesGroups)):
-        quesDivs = quesGroups[k].findAll("div",{"class":"question-pnl"})
-        for quesDiv in quesDivs:
-            images = quesDiv.findAll("img")
-            qType = quesDiv.find("td",text=re.compile("Question Type")).findNext('td').contents[0]
-            quesUrl = images[0]['src']
-            ansUrls = [img['src'] for img in images[1:]]
-            status = quesDiv.find("td",text=re.compile("Status")).findNext('td').contents[0]
-            qID = quesDiv.find("td",text=re.compile("Question ID")).findNext('td').contents[0]
-            subject = subjects[k//2]
-            optionIds = []
-            ansNumber = -1
-            if status in ["Not Answered","Not Attempted and Marked For Review"]:
-                ans = "NA"
-                if qType == "MCQ":
-                    for i in range(4):
-                        optionIds.append(quesDiv.find("td",text=re.compile(f"Option {i+1} ID")).findNext('td').contents[0])
-            elif qType == "MCQ":
+    questions = quespaper.findAll("td",{"class":"rw"})
+    qno = 1
+    for question in questions:
+        images = question.findAll("img")
+        quesUrl = images[0]['src']
+        ansUrls = [img['src'] for img in images[1:]]
+        qType = question.find("td",text=re.compile("Question Type")).findNext('td').contents[0]
+        status = question.find("td",text=re.compile("Status")).findNext('td').contents[0]
+        qID = question.find("td",text=re.compile("Question ID")).findNext('td').contents[0]
+        subject = subjects[(qno-1)//30]
+        optionIds = []
+        ansNumber = -1
+        if status in ["Not Answered","Not Attempted and Marked For Review"]:
+            ans = "NA"
+            if qType == "MCQ":
                 for i in range(4):
-                    optionIds.append(quesDiv.find("td",text=re.compile(f"Option {i+1} ID")).findNext('td').contents[0])
-                ansNumber = quesDiv.find("td",text=re.compile("Chosen Option")).findNext('td').contents[0]
-                ans = quesDiv.find("td",text=re.compile(f"Option {ansNumber} ID")).findNext('td').contents[0]
-            elif qType == "SA":
-                ans = quesDiv.find("td",text=re.compile("Given Answer")).findNext('td').contents[0]
-                ansNumber = ans
-                if ans.strip() == "--":
-                    ans = "NA"
-            marked.append(Question(qType,subject,qID,ans,quesUrl,ansUrls,ansNumber,optionIds))
+                    optionIds.append(question.find("td",text=re.compile(f"Option {i+1} ID")).findNext('td').contents[0])
+        elif qType == "MCQ":
+            for i in range(4):
+                optionIds.append(question.find("td",text=re.compile(f"Option {i+1} ID")).findNext('td').contents[0])
+            ansNumber = question.find("td",text=re.compile("Chosen Option")).findNext('td').contents[0]
+            ans = question.find("td",text=re.compile(f"Option {ansNumber} ID")).findNext('td').contents[0]
+        elif qType == "SA":
+            ans = question.find("td",text=re.compile("Given Answer")).findNext('td').contents[0]
+            ansNumber = ans
+            if ans.strip() == "--":
+                ans = "NA"
+        qno += 1
+        marked.append(Question(qType,subject,qID,ans,quesUrl,ansUrls,ansNumber,optionIds))
+
     return marked
+    # quesGroups = quespaper.findAll("div",{"class":"section-cntnr"})
+    # for k in range(len(quesGroups)):
+    #     quesDivs = quesGroups[k].findAll("div",{"class":"question-pnl"})
+    #     for quesDiv in quesDivs:
+    #         images = quesDiv.findAll("img")
+    #         qType = quesDiv.find("td",text=re.compile("Question Type")).findNext('td').contents[0]
+    #         quesUrl = images[0]['src']
+    #         ansUrls = [img['src'] for img in images[1:]]
+    #         status = quesDiv.find("td",text=re.compile("Status")).findNext('td').contents[0]
+    #         qID = quesDiv.find("td",text=re.compile("Question ID")).findNext('td').contents[0]
+    #         subject = subjects[k//2]
+    #         optionIds = []
+    #         ansNumber = -1
+    #         if status in ["Not Answered","Not Attempted and Marked For Review"]:
+    #             ans = "NA"
+    #             if qType == "MCQ":
+    #                 for i in range(4):
+    #                     optionIds.append(quesDiv.find("td",text=re.compile(f"Option {i+1} ID")).findNext('td').contents[0])
+    #         elif qType == "MCQ":
+    #             for i in range(4):
+    #                 optionIds.append(quesDiv.find("td",text=re.compile(f"Option {i+1} ID")).findNext('td').contents[0])
+    #             ansNumber = quesDiv.find("td",text=re.compile("Chosen Option")).findNext('td').contents[0]
+    #             ans = quesDiv.find("td",text=re.compile(f"Option {ansNumber} ID")).findNext('td').contents[0]
+    #         elif qType == "SA":
+    #             ans = quesDiv.find("td",text=re.compile("Given Answer")).findNext('td').contents[0]
+    #             ansNumber = ans
+    #             if ans.strip() == "--":
+    #                 ans = "NA"
+    #         marked.append(Question(qType,subject,qID,ans,quesUrl,ansUrls,ansNumber,optionIds))
+    # return marked
 
 def getAnswers(anskey):
     key = {}
-    ansRows = anskey.find("table",{"class":"table table-bordered table-condensed"}).findAll(class_=None,recursive=False)
-    for ansRow in ansRows:
-        qID = ansRow.find("span",id=re.compile("QuestionNo")).contents[0]
-        ans = ansRow.find("span",id=re.compile("RAnswer")).contents[0]
-        key[str(qID)]=ans
+    #ansRows = anskey.find("table",{"class":"table table-bordered table-condensed"}).findAll("tbody")[0]
+    qids = anskey.findAll("span",id=re.compile("QuestionNo"))
+    answers = anskey.findAll("span",id=re.compile("RAnswer"))
+    for qid,ans in zip(qids,answers):
+        key[qid.text] = ans.text
     return key
 
 def checkPaper(marked,key):
@@ -112,6 +143,8 @@ quespaper = soup(qpaperHTML,"lxml")
 anskey = soup(anskeyHTML,"lxml")
 
 marked = getMarked(quespaper)
+#print(marked)
+#exit()
 key = getAnswers(anskey)
 marks,data,subjectWise = checkPaper(marked,key)
 jsonData = json.dumps(makeJSON(data))
