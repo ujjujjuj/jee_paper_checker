@@ -23,9 +23,6 @@ class Question:
     def __repr__(self):
         return f'Question({self.subject} {self.qType})'
 
-def create_dict(*args):
-    return {k:eval(k) for k in args}
-
 def getMarked(quespaper):
     marked = []
     questions = quespaper.findAll("td",{"class":"rw"})
@@ -89,8 +86,9 @@ def checkPaper(marked,key):
             qCategory = subjects.index(ques.subject)*2 + (1 if ques.qType == "SA" else 0)
             subjectWise[qCategory] += 4
         else:
-            incorrect.append(ques)
-            ques.correctAns = key[ques.qID]
+            if ques.qType == "MCQ":
+                ques.correctAns = ques.optionIds.index(key[ques.qID]) + 1
+            incorrect.append(ques) 
             if ques.qType == "MCQ":
                 marks -=1
                 ques.status = "incorrect"
@@ -118,8 +116,7 @@ quespaper = soup(qpaperHTML,"lxml")
 anskey = soup(anskeyHTML,"lxml")
 
 marked = getMarked(quespaper)
-#print(marked)
-#exit()
+
 key = getAnswers(anskey)
 marks,data,subjectWise = checkPaper(marked,key)
 jsonData = json.dumps(makeJSON(data))
