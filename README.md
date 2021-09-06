@@ -1,1 +1,7 @@
-copy paste the source code of the question paper and answer key websites and save them as question_paper.html and answer_key.html respectively in this directory
+# JEE Paper Checker
+A tool to help you calculate your marks in JEE Mains
+
+# Instructions
+1) Enter your application number and DOB in `config.py`
+2) Run `login.py` to download the question paper and answer key
+3) Run `check.py` to calculate marks and get an analysis of the paper

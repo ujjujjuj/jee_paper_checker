@@ -3,7 +3,6 @@ import re
 import json
 
 subjects = ["physics","chemistry","math"]
-
 class Question:
     def __init__(self,qType,subject,qID,ans,quesUrl,ansUrls,chosenOptionNumber,optionIds):
         self.qType = qType
@@ -12,14 +11,20 @@ class Question:
         self.status = "unattempted"
         self.ans = ans
         self.correctAns = ans
-        self.quesUrl = "https://cdn3.digialm.com/"+quesUrl
-        self.ansUrls = ["https://cdn3.digialm.com/"+ansUrl for ansUrl in ansUrls]
-        self.chosenOptionNumber = int(chosenOptionNumber)
+        self.quesUrl = quesUrl
+        self.ansUrls = ansUrls
+        try:
+            self.chosenOptionNumber = int(chosenOptionNumber)
+        except:
+            self.chosenOptionNumber = 0
         self.correctAnsNumber = "None"
         self.optionIds = optionIds
 
     def __repr__(self):
         return f'Question({self.subject} {self.qType})'
+
+def create_dict(*args):
+    return {k:eval(k) for k in args}
 
 def getMarked(quespaper):
     marked = []
@@ -54,37 +59,7 @@ def getMarked(quespaper):
         marked.append(Question(qType,subject,qID,ans,quesUrl,ansUrls,ansNumber,optionIds))
 
     return marked
-    # quesGroups = quespaper.findAll("div",{"class":"section-cntnr"})
-    # for k in range(len(quesGroups)):
-    #     quesDivs = quesGroups[k].findAll("div",{"class":"question-pnl"})
-    #     for quesDiv in quesDivs:
-    #         images = quesDiv.findAll("img")
-    #         qType = quesDiv.find("td",text=re.compile("Question Type")).findNext('td').contents[0]
-    #         quesUrl = images[0]['src']
-    #         ansUrls = [img['src'] for img in images[1:]]
-    #         status = quesDiv.find("td",text=re.compile("Status")).findNext('td').contents[0]
-    #         qID = quesDiv.find("td",text=re.compile("Question ID")).findNext('td').contents[0]
-    #         subject = subjects[k//2]
-    #         optionIds = []
-    #         ansNumber = -1
-    #         if status in ["Not Answered","Not Attempted and Marked For Review"]:
-    #             ans = "NA"
-    #             if qType == "MCQ":
-    #                 for i in range(4):
-    #                     optionIds.append(quesDiv.find("td",text=re.compile(f"Option {i+1} ID")).findNext('td').contents[0])
-    #         elif qType == "MCQ":
-    #             for i in range(4):
-    #                 optionIds.append(quesDiv.find("td",text=re.compile(f"Option {i+1} ID")).findNext('td').contents[0])
-    #             ansNumber = quesDiv.find("td",text=re.compile("Chosen Option")).findNext('td').contents[0]
-    #             ans = quesDiv.find("td",text=re.compile(f"Option {ansNumber} ID")).findNext('td').contents[0]
-    #         elif qType == "SA":
-    #             ans = quesDiv.find("td",text=re.compile("Given Answer")).findNext('td').contents[0]
-    #             ansNumber = ans
-    #             if ans.strip() == "--":
-    #                 ans = "NA"
-    #         marked.append(Question(qType,subject,qID,ans,quesUrl,ansUrls,ansNumber,optionIds))
-    # return marked
-
+    
 def getAnswers(anskey):
     key = {}
     #ansRows = anskey.find("table",{"class":"table table-bordered table-condensed"}).findAll("tbody")[0]
@@ -102,8 +77,8 @@ def checkPaper(marked,key):
     subjectWise = [0,0,0,0,0,0]
     for ques in marked:
         ques.correctAns = key[ques.qID]
-        if ques.qType=="MCQ":
-            ques.correctAnsNumber = ques.optionIds.index(key[ques.qID]) + 1
+        if ques.qType == "MCQ":
+            ques.correctAns = ques.optionIds.index(key[ques.qID]) + 1
         if ques.ans == "NA":
             unattempted.append(ques)
             ques.correctAns = key[ques.qID]
@@ -116,7 +91,7 @@ def checkPaper(marked,key):
         else:
             incorrect.append(ques)
             ques.correctAns = key[ques.qID]
-            if ques.qType=="MCQ":
+            if ques.qType == "MCQ":
                 marks -=1
                 ques.status = "incorrect"
                 qCategory = subjects.index(ques.subject)*2
@@ -439,4 +414,4 @@ print(f"You attempted {len(data[0])} correct questions and {len(data[1])} incorr
 print(f"Physics: {subjectWise[0]} + {subjectWise[1]}")
 print(f"Chemistry: {subjectWise[2]} + {subjectWise[3]}")
 print(f"Maths: {subjectWise[4]} + {subjectWise[5]}\n")
-print("Other information is provided in review.html file")
+print("Other information is provided in review.html")
