@@ -1,7 +1,15 @@
 # JEE Paper Checker
-A tool to help you calculate your marks in JEE Mains
+> Update: From 2023 onwards, automatic login does not work. See steps on How To Use to save response sheet and answer key manually .
 
-# Instructions
-1) Enter your application number and DOB in `config.py`
-2) Run `login.py` to download the question paper and answer key
-3) Run `check.py` to calculate marks and get an analysis of the paper
+Checking JEE mains response sheet manually is a disaster. This tool automatically check your response sheet with given answer key and shows you your marks. Also creates a review.html file showing correct, incorrect and unattempted questions
+
+## Prerequisites
+1) Python must be installed and on PATH
+2) run `pip install -r requirements.txt` from working directory or install manually from pip all the requirements in file requirements.txt
+
+
+## How to use
+1) Open your response sheet -> Right click -> Save as (save in project working directory as `question_paper.html`)
+2) Open answer key -> Right click -> Save as (save in project working directory as `answer_key.html`)
+3) run `python check.py` 
+4) Check out your marks in output. Also see review.html after this.
