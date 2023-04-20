@@ -1,2 +1,0 @@
-APPLICATION_NUMBER = 0 # int
-DOB = "" # DD-MM-YYYY

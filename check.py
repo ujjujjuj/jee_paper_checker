@@ -2,9 +2,11 @@ from bs4 import BeautifulSoup as soup
 import re
 import json
 
-subjects = ["physics","chemistry","math"]
+subjects = ["physics", "chemistry", "math"]
+
+
 class Question:
-    def __init__(self,qType,subject,qID,ans,quesUrl,ansUrls,chosenOptionNumber,optionIds):
+    def __init__(self, qType, subject, qID, ans, quesUrl, ansUrls, chosenOptionNumber, optionIds):
         self.qType = qType
         self.qID = qID
         self.subject = subject
@@ -23,55 +25,68 @@ class Question:
     def __repr__(self):
         return f'Question({self.subject} {self.qType})'
 
+
 def getMarked(quespaper):
     marked = []
-    questions = quespaper.findAll("td",{"class":"rw"})
+    questions = quespaper.findAll("td", {"class": "rw"})
     qno = 1
     for question in questions:
         images = question.findAll("img")
         quesUrl = images[0]['src']
         ansUrls = [img['src'] for img in images[1:]]
-        qType = question.find("td",text=re.compile("Question Type")).findNext('td').contents[0]
-        status = question.find("td",text=re.compile("Status")).findNext('td').contents[0]
-        qID = question.find("td",text=re.compile("Question ID")).findNext('td').contents[0]
+        qType = question.find("td", text=re.compile(
+            "Question Type")).findNext('td').contents[0]
+        status = question.find("td", text=re.compile(
+            "Status")).findNext('td').contents[0]
+        qID = question.find("td", text=re.compile(
+            "Question ID")).findNext('td').contents[0]
         subject = subjects[(qno-1)//30]
         optionIds = []
         ansNumber = -1
-        if status in ["Not Answered","Not Attempted and Marked For Review"]:
+        if status in ["Not Answered", "Not Attempted and Marked For Review"]:
             ans = "NA"
             if qType == "MCQ":
                 for i in range(4):
-                    optionIds.append(question.find("td",text=re.compile(f"Option {i+1} ID")).findNext('td').contents[0])
+                    optionIds.append(question.find("td", text=re.compile(
+                        f"Option {i+1} ID")).findNext('td').contents[0])
         elif qType == "MCQ":
             for i in range(4):
-                optionIds.append(question.find("td",text=re.compile(f"Option {i+1} ID")).findNext('td').contents[0])
-            ansNumber = question.find("td",text=re.compile("Chosen Option")).findNext('td').contents[0]
-            ans = question.find("td",text=re.compile(f"Option {ansNumber} ID")).findNext('td').contents[0]
+                optionIds.append(question.find("td", text=re.compile(
+                    f"Option {i+1} ID")).findNext('td').contents[0])
+            ansNumber = question.find("td", text=re.compile(
+                "Chosen Option")).findNext('td').contents[0]
+            ans = question.find("td", text=re.compile(
+                f"Option {ansNumber} ID")).findNext('td').contents[0]
         elif qType == "SA":
-            ans = question.find("td",text=re.compile("Given Answer")).findNext('td').contents[0]
+            ans = question.find("td", text=re.compile(
+                "Given Answer")).findNext('td').contents[0]
             ansNumber = ans
             if ans.strip() == "--":
                 ans = "NA"
         qno += 1
-        marked.append(Question(qType,subject,qID,ans,quesUrl,ansUrls,ansNumber,optionIds))
+        marked.append(Question(qType, subject, qID, ans,
+                      quesUrl, ansUrls, ansNumber, optionIds))
 
     return marked
-    
+
+
 def getAnswers(anskey):
     key = {}
-    #ansRows = anskey.find("table",{"class":"table table-bordered table-condensed"}).findAll("tbody")[0]
-    qids = anskey.findAll("span",id=re.compile("QuestionNo"))
-    answers = anskey.findAll("span",id=re.compile("RAnswer"))
-    for qid,ans in zip(qids,answers):
+    # ansRows = anskey.find("table",{"class":"table table-bordered table-condensed"}).findAll("tbody")[0]
+    qids = anskey.findAll("span", id=re.compile("QuestionNo"))
+    answers = anskey.findAll("span", id=re.compile("RAnswer"))
+    for qid, ans in zip(qids, answers):
         key[qid.text] = ans.text
+
     return key
 
-def checkPaper(marked,key):
+
+def checkPaper(marked, key):
     marks = 0
     correct = []
     incorrect = []
     unattempted = []
-    subjectWise = [0,0,0,0,0,0]
+    subjectWise = [0, 0, 0, 0, 0, 0]
     for ques in marked:
         ques.correctAns = key[ques.qID]
         if ques.qType == "MCQ":
@@ -83,42 +98,48 @@ def checkPaper(marked,key):
             marks += 4
             correct.append(ques)
             ques.status = "correct"
-            qCategory = subjects.index(ques.subject)*2 + (1 if ques.qType == "SA" else 0)
+            qCategory = subjects.index(
+                ques.subject)*2 + (1 if ques.qType == "SA" else 0)
             subjectWise[qCategory] += 4
         else:
             if ques.qType == "MCQ":
                 ques.correctAns = ques.optionIds.index(key[ques.qID]) + 1
-            incorrect.append(ques) 
-            if ques.qType == "MCQ":
-                marks -=1
-                ques.status = "incorrect"
-                qCategory = subjects.index(ques.subject)*2
-                subjectWise[qCategory] -= 1
-    return marks,[correct,incorrect,unattempted],subjectWise
+            incorrect.append(ques)
+
+            marks -= 1
+            ques.status = "incorrect"
+            qCategory = subjects.index(
+                ques.subject)*2 + (1 if ques.qType == "SA" else 0)
+            subjectWise[qCategory] -= 1
+
+    return marks, [correct, incorrect, unattempted], subjectWise
+
 
 def makeJSON(data):
-    finalJson = {"correct":[],"incorrect":[],"unattempted":[]}
+    finalJson = {"correct": [], "incorrect": [], "unattempted": []}
     j = 0
     for i in finalJson:
         for ques in data[j]:
-            finalJson[i].append([ques.quesUrl,ques.ansUrls,ques.chosenOptionNumber,ques.correctAns if ques.correctAnsNumber == "None" else ques.correctAnsNumber])
+            finalJson[i].append([ques.quesUrl, ques.ansUrls, ques.chosenOptionNumber,
+                                ques.correctAns if ques.correctAnsNumber == "None" else ques.correctAnsNumber])
         j += 1
     return finalJson
 
+
 qpaperHTML = ""
 anskeyHTML = ""
-with open("question_paper.html","r") as f:
+with open("question_paper.html", "r") as f:
     qpaperHTML = f.read()
-with open("answer_key.html","r") as f:
+with open("answer_key.html", "r") as f:
     anskeyHTML = f.read()
 
-quespaper = soup(qpaperHTML,"lxml")
-anskey = soup(anskeyHTML,"lxml")
+quespaper = soup(qpaperHTML, "lxml")
+anskey = soup(anskeyHTML, "lxml")
 
 marked = getMarked(quespaper)
 
 key = getAnswers(anskey)
-marks,data,subjectWise = checkPaper(marked,key)
+marks, data, subjectWise = checkPaper(marked, key)
 jsonData = json.dumps(makeJSON(data))
 html = """\
 <!DOCTYPE html>
@@ -403,11 +424,12 @@ html = """\
 </html>
 
 """
-with open("review.html","w") as f:
+with open("review.html", "w") as f:
     f.write(html)
 
 print(f"You have scored {marks} marks out of 300")
-print(f"You attempted {len(data[0])} correct questions and {len(data[1])} incorrect questions.")
+print(
+    f"You attempted {len(data[0])} correct questions and {len(data[1])} incorrect questions.")
 print(f"Physics: {subjectWise[0]} + {subjectWise[1]}")
 print(f"Chemistry: {subjectWise[2]} + {subjectWise[3]}")
 print(f"Maths: {subjectWise[4]} + {subjectWise[5]}\n")
